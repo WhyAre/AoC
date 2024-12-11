@@ -23,13 +23,6 @@ fn is_possible(eqn: &Vec<i64>, index: usize, ans: i64) -> bool {
     res
 }
 
-// num1 ends with num2
-fn ends_with(num1: i64, num2: i64) -> bool {
-    let num_digits = num2.checked_ilog10().unwrap_or(0) + 1;
-
-    is_digits_same(num1, num2, num_digits)
-}
-
 fn is_digits_same(num1: i64, num2: i64, num_digits: u32) -> bool {
     let mask = 10i64.pow(num_digits);
 
