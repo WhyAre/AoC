@@ -1,10 +1,8 @@
 use std::{
     cmp::Ordering,
-    collections::{BinaryHeap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, BinaryHeap},
     io::{stdin, BufRead},
 };
-
-use itertools::repeat_n;
 
 const WALL: u8 = b'#';
 const INF: usize = usize::MAX;
@@ -82,13 +80,11 @@ fn find(board: &Vec<Vec<u8>>, char: u8) -> (usize, usize) {
 }
 
 fn sssp(board: &Vec<Vec<u8>>) -> (usize, usize) {
-    let rows = board.len();
-    let cols = board[0].len();
     let (start_row, start_col) = find(board, b'S');
     let (end_row, end_col) = find(board, b'E');
 
-    let mut dists: HashMap<Pos, usize> = HashMap::new();
-    let mut parents: HashMap<Pos, HashMap<Pos, usize>> = HashMap::new();
+    let mut dists: BTreeMap<Pos, usize> = BTreeMap::new();
+    let mut parents: BTreeMap<Pos, BTreeMap<Pos, usize>> = BTreeMap::new();
     let mut pq: BinaryHeap<State> = BinaryHeap::new();
 
     let start_pos = Pos::new(start_row, start_col, Dir::East);
@@ -126,7 +122,7 @@ fn sssp(board: &Vec<Vec<u8>>) -> (usize, usize) {
             dists.insert(newpos.clone(), newdist);
             parents
                 .entry(newpos.clone())
-                .or_insert(HashMap::new())
+                .or_insert(BTreeMap::new())
                 .insert(pos.clone(), newdist);
 
             pq.push(State {
@@ -137,8 +133,7 @@ fn sssp(board: &Vec<Vec<u8>>) -> (usize, usize) {
     }
 
     // dbg!(&dists);
-    let mut visited: HashSet<Pos> = HashSet::new();
-    let mut visited_2d: Vec<Vec<bool>> = repeat_n(repeat_n(false, cols).collect(), rows).collect();
+    let mut visited: BTreeSet<Pos> = BTreeSet::new();
     let mindist = find_min_dist(end_row, end_col, &dists);
     for d in DIRS {
         let Some(dist) = dists.get(&Pos::new(end_row, end_col, d)) else {
@@ -159,12 +154,12 @@ fn sssp(board: &Vec<Vec<u8>>) -> (usize, usize) {
         visited
             .into_iter()
             .map(|Pos { r, c, dir: _ }| (r, c))
-            .collect::<HashSet<(usize, usize)>>()
+            .collect::<BTreeSet<(usize, usize)>>()
             .len(),
     )
 }
 
-fn print_map(board: &Vec<Vec<u8>>, visited: &HashSet<Pos>) {
+fn print_map(board: &Vec<Vec<u8>>, visited: &BTreeSet<Pos>) {
     for (r, row) in board.iter().enumerate() {
         for c in 0..row.len() {
             if DIRS
@@ -180,7 +175,7 @@ fn print_map(board: &Vec<Vec<u8>>, visited: &HashSet<Pos>) {
     }
 }
 
-fn find_min_dist(r: usize, c: usize, dists: &HashMap<Pos, usize>) -> usize {
+fn find_min_dist(r: usize, c: usize, dists: &BTreeMap<Pos, usize>) -> usize {
     // dbg!(dists, r, c);
     *DIRS
         .into_iter()
@@ -198,8 +193,8 @@ fn dfs(
     r: usize,
     c: usize,
     dir: Dir,
-    parents_map: &HashMap<Pos, HashMap<Pos, usize>>,
-    visited: &mut HashSet<Pos>,
+    parents_map: &BTreeMap<Pos, BTreeMap<Pos, usize>>,
+    visited: &mut BTreeSet<Pos>,
 ) {
     let pos = Pos::new(r, c, dir);
 
