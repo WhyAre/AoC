@@ -1,249 +1,225 @@
 use std::{
-    collections::{BTreeMap, BTreeSet, BinaryHeap},
+    cmp::Ordering,
+    collections::{BinaryHeap, HashMap, HashSet},
     io::{stdin, BufRead},
 };
 
 use itertools::repeat_n;
 
-#[derive(PartialEq, Clone, Copy, PartialOrd, Eq, Ord, Debug)]
+const WALL: u8 = b'#';
+const INF: usize = usize::MAX;
+const DIRS: [Dir; 4] = [Dir::North, Dir::South, Dir::East, Dir::West];
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Copy, Clone, Debug)]
 enum Dir {
-    NORTH = 0,
-    EAST = 1,
-    SOUTH = 2,
-    WEST = 3,
+    North = 0,
+    East = 1,
+    South = 2,
+    West = 3,
 }
 
-fn part1(board: &Vec<Vec<u8>>) -> i64 {
-    const WALL: u8 = b'#';
-    const INF: i64 = i64::MAX;
-    const NUM_DIR: i64 = 4;
-    const DELTAS: [(isize, isize, Dir); 4] = [
-        (-1, 0, Dir::NORTH),
-        (0, 1, Dir::EAST),
-        (1, 0, Dir::SOUTH),
-        (0, -1, Dir::WEST),
-    ];
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Debug)]
+struct Pos {
+    r: usize,
+    c: usize,
+    dir: Dir,
+}
 
-    let start_row = board.len() - 2;
-    let start_col = 1usize;
-    let start_dir = Dir::EAST;
+impl Pos {
+    fn new(r: usize, c: usize, dir: Dir) -> Self {
+        Self { r, c, dir }
+    }
+    fn neighbours(&self) -> impl Iterator<Item = (Pos, usize)> + '_ {
+        let dirs = [
+            (-1, 0, Dir::North),
+            (0, 1, Dir::East),
+            (1, 0, Dir::South),
+            (0, -1, Dir::West),
+        ];
 
-    let mut pq: BinaryHeap<(usize, usize, i64, Dir)> = BinaryHeap::new();
-    let mut dists: Vec<Vec<i64>> =
-        repeat_n(repeat_n(INF, board[0].len()).collect(), board.len()).collect();
+        dirs.into_iter().map(|(dr, dc, dir)| {
+            let newpos = Self::new(
+                self.r.wrapping_add_signed(dr),
+                self.c.wrapping_add_signed(dc),
+                dir,
+            );
 
-    dists[start_row][start_col] = 0;
-    pq.push((start_row, start_col, 0, start_dir));
-    while !pq.is_empty() {
-        let (r, c, d, curdir) = pq.pop().unwrap();
-        // dbg!(r, c, d);
-
-        if d > dists[r][c] {
-            // Lazy deletion
-            continue;
-        }
-
-        for (dr, dc, dir) in DELTAS {
-            let (nr, nc) = (r.wrapping_add_signed(dr), c.wrapping_add_signed(dc));
-
-            if board[nr][nc] == WALL {
-                continue;
-            }
-
-            let diff = (curdir as i64 - dir as i64).abs();
-            // dbg!(diff);
+            let diff = (self.dir as i64 - dir as i64).abs();
             let dist = 1 + match diff {
                 0 => 0,
                 1 | 3 => 1000,
                 2 => 2000,
-                _ => panic!("Noooo"),
-            };
+                _ => panic!(),
+            } as usize;
 
-            if dists[r][c] + dist >= dists[nr][nc] {
-                continue;
+            (newpos, dist)
+        })
+    }
+}
+
+#[derive(PartialEq, Eq, Ord)]
+struct State {
+    pos: Pos,
+    dist: usize,
+}
+
+impl PartialOrd for State {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        other.dist.partial_cmp(&self.dist)
+    }
+}
+
+fn find(board: &Vec<Vec<u8>>, char: u8) -> (usize, usize) {
+    for (r, row) in board.iter().enumerate() {
+        for (c, cell) in row.iter().enumerate() {
+            if *cell == char {
+                return (r, c);
             }
-
-            dists[nr][nc] = dists[r][c] + dist;
-            pq.push((nr, nc, dists[nr][nc], dir));
         }
     }
 
-    dists[1][board[0].len() - 2]
+    panic!("Cannot find char in cell");
 }
 
-fn part2(board: &Vec<Vec<u8>>) -> i64 {
-    const WALL: u8 = b'#';
-    const INF: i64 = i64::MAX;
-    const NUM_DIR: i64 = 4;
-    const DELTAS: [(isize, isize, Dir); 4] = [
-        (-1, 0, Dir::NORTH),
-        (0, 1, Dir::EAST),
-        (1, 0, Dir::SOUTH),
-        (0, -1, Dir::WEST),
-    ];
+fn sssp(board: &Vec<Vec<u8>>) -> (usize, usize) {
+    let rows = board.len();
+    let cols = board[0].len();
+    let (start_row, start_col) = find(board, b'S');
+    let (end_row, end_col) = find(board, b'E');
 
-    let start_row = board.len() - 2;
-    let start_col = 1usize;
-    let start_dir = Dir::EAST;
+    let mut dists: HashMap<Pos, usize> = HashMap::new();
+    let mut parents: HashMap<Pos, HashMap<Pos, usize>> = HashMap::new();
+    let mut pq: BinaryHeap<State> = BinaryHeap::new();
 
-    let mut pq: BinaryHeap<(i64, usize, usize, Dir)> = BinaryHeap::new();
-    let mut dists: Vec<Vec<Vec<i64>>> = repeat_n(
-        repeat_n(repeat_n(INF, NUM_DIR as usize).collect(), board[0].len()).collect(),
-        board.len(),
-    )
-    .collect();
-    let mut parents: BTreeMap<(usize, usize, Dir), BTreeMap<(usize, usize, Dir), i64>> =
-        BTreeMap::new();
-    let mut visited: BTreeSet<(usize, usize, Dir)> = BTreeSet::new();
+    let start_pos = Pos::new(start_row, start_col, Dir::East);
+    pq.push(State {
+        pos: start_pos.clone(),
+        dist: 0,
+    });
+    dists.insert(start_pos, 0);
 
-    dists[start_row][start_col][start_dir as usize] = 0;
-    pq.push((0, start_row, start_col, start_dir));
-    while !pq.is_empty() {
-        let (d, r, c, curdir) = pq.pop().unwrap();
-        // println!("{:?} {:?} {:?} {:?}", r, c, curdir, d);
-
-        if d > dists[r][c][curdir as usize] {
-            // Lazy deletion
-            continue;
+    while let Some(State { pos, dist }) = pq.pop() {
+        if dist > *dists.get(&pos).unwrap() {
+            continue; // Lazy deletion
         }
 
-        if d > 73432 {
-            continue;
-        }
+        // println!("Processing {:?} {:?}", pos, dist);
 
-        for (dr, dc, dir) in DELTAS {
-            let (nr, nc) = (r.wrapping_add_signed(dr), c.wrapping_add_signed(dc));
+        for (newpos, cost) in pos.neighbours() {
+            let Pos {
+                r: nr,
+                c: nc,
+                dir: _,
+            } = newpos;
 
             if board[nr][nc] == WALL {
                 continue;
             }
 
-            let diff = (curdir as i64 - dir as i64).abs();
-            // dbg!(diff);
-            let dist = 1 + match diff {
-                0 => 0,
-                1 | 3 => 1000,
-                2 => 2000,
-                _ => panic!("Noooo"),
-            };
-
-            // dbg!(dists[r][c][curdir as usize] + dist);
-            let newdist = dists[r][c][curdir as usize] + dist;
-            if newdist > dists[nr][nc][dir as usize] {
+            let newdist = dists[&pos] + cost;
+            if newdist > *dists.get(&newpos).unwrap_or(&INF) {
                 continue;
             }
 
-            // parents[nr][nc].push((r, c));
+            // println!("Adding {:?} {:?}", newpos, newdist);
+
+            dists.insert(newpos.clone(), newdist);
             parents
-                .entry((nr, nc, dir))
-                .or_insert_with(|| BTreeMap::new())
-                .insert((r, c, curdir), newdist);
+                .entry(newpos.clone())
+                .or_insert(HashMap::new())
+                .insert(pos.clone(), newdist);
 
-            dists[nr][nc][dir as usize] = newdist;
-            pq.push((newdist, nr, nc, dir));
+            pq.push(State {
+                pos: newpos,
+                dist: newdist,
+            })
         }
     }
 
-    let mut visited: Vec<Vec<bool>> =
-        repeat_n(repeat_n(false, board[0].len()).collect(), board.len()).collect();
+    // dbg!(&dists);
+    let mut visited: HashSet<Pos> = HashSet::new();
+    let mut visited_2d: Vec<Vec<bool>> = repeat_n(repeat_n(false, cols).collect(), rows).collect();
+    let mindist = find_min_dist(end_row, end_col, &dists);
+    for d in DIRS {
+        let Some(dist) = dists.get(&Pos::new(end_row, end_col, d)) else {
+            continue;
+        };
 
-    let (end_row, end_col) = (1, board[0].len() - 2);
+        if *dist != mindist {
+            continue;
+        }
 
-    // dbg!(&parents);
-    // dbg!(parents.get(&(1, 13, Dir::NORTH)));
-    // dbg!(parents.get(&(1, 13, Dir::SOUTH)));
-    // dbg!(parents.get(&(1, 13, Dir::EAST)));
-    // dbg!(parents.get(&(1, 13, Dir::WEST)));
-    println!("Retracing");
-    let set = retrace_steps(end_row, end_col, &parents, &dists);
-
-    for (r, c, _) in set {
-        visited[r][c] = true;
+        dfs(end_row, end_col, d, &parents, &mut visited);
     }
 
-    let mut count = 0;
-    for (row_ind, row) in visited.into_iter().enumerate() {
-        for (col_ind, is_visited) in row.into_iter().enumerate() {
-            let char = if board[row_ind][col_ind] == WALL {
-                WALL as char
-            } else if is_visited {
-                'O'
+    print_map(&board, &visited);
+
+    (
+        mindist,
+        visited
+            .into_iter()
+            .map(|Pos { r, c, dir: _ }| (r, c))
+            .collect::<HashSet<(usize, usize)>>()
+            .len(),
+    )
+}
+
+fn print_map(board: &Vec<Vec<u8>>, visited: &HashSet<Pos>) {
+    for (r, row) in board.iter().enumerate() {
+        for c in 0..row.len() {
+            if DIRS
+                .iter()
+                .any(|&x| visited.get(&Pos::new(r, c, x)).is_some())
+            {
+                print!("O");
             } else {
-                '.'
-            };
-            print!("{}", char);
-            count += if is_visited { 1 } else { 0 };
+                print!("{}", board[r][c] as char);
+            }
         }
         println!("");
     }
-    count
 }
 
-fn retrace_steps(
-    end_row: usize,
-    end_col: usize,
-    parents: &BTreeMap<(usize, usize, Dir), BTreeMap<(usize, usize, Dir), i64>>,
-    dists: &Vec<Vec<Vec<i64>>>,
-) -> BTreeSet<(usize, usize, Dir)> {
-    let mut visited: BTreeSet<(usize, usize, Dir)> = BTreeSet::new();
-
-    let min_val = *dists[end_row][end_col].iter().min().unwrap();
-
-    let dirs: Vec<usize> = dists[end_row][end_col]
-        .iter()
-        .enumerate()
-        .filter(|&(_, val)| *val == min_val)
-        .map(|(k, _)| k)
-        .collect();
-
-    for d in dirs {
-        let d = match d {
-            0 => Dir::NORTH,
-            1 => Dir::EAST,
-            2 => Dir::SOUTH,
-            3 => Dir::WEST,
-            _ => panic!("Noo"),
-        };
-        dfs(end_row, end_col, d, parents, &mut visited);
-    }
-
-    visited
+fn find_min_dist(r: usize, c: usize, dists: &HashMap<Pos, usize>) -> usize {
+    // dbg!(dists, r, c);
+    *DIRS
+        .into_iter()
+        .filter_map(|d| {
+            let pos = Pos::new(r, c, d);
+            let out = dists.get(&pos);
+            // dbg!(out);
+            out
+        })
+        .min()
+        .unwrap()
 }
+
 fn dfs(
     r: usize,
     c: usize,
     dir: Dir,
-    parents: &BTreeMap<(usize, usize, Dir), BTreeMap<(usize, usize, Dir), i64>>,
-    visited: &mut BTreeSet<(usize, usize, Dir)>,
+    parents_map: &HashMap<Pos, HashMap<Pos, usize>>,
+    visited: &mut HashSet<Pos>,
 ) {
-    visited.insert((r, c, dir));
+    let pos = Pos::new(r, c, dir);
 
-    let parents_list = parents.get(&(r, c, dir));
-
-    if parents_list.is_none() {
+    visited.insert(pos.clone());
+    let Some(parents) = parents_map.get(&pos) else {
         return;
-    }
+    };
 
-    let min_val = parents_list
-        .unwrap()
+    let mindist = *parents.values().min().unwrap();
+    for newpos in parents
         .into_iter()
-        .min_by(|(_, v1), (_, v2)| v1.cmp(v2))
-        .map(|(_, v)| *v)
-        .unwrap();
-
-    let least_parents = parents_list
-        .unwrap()
-        .into_iter()
-        .filter(|(_, v)| **v == min_val)
-        .map(|(k, _)| *k)
-        .collect::<Vec<_>>();
-
-    for (pr, pc, parent_dir) in least_parents {
-        if visited.contains(&(pr, pc, parent_dir)) {
+        .filter(|&(_, v)| *v == mindist)
+        .map(|(k, _)| (*k).clone())
+    {
+        if visited.contains(&newpos) {
             continue;
         }
 
-        dfs(pr, pc, parent_dir, parents, visited);
+        let Pos { r, c, dir } = newpos;
+        dfs(r, c, dir, parents_map, visited);
     }
 }
 
@@ -251,40 +227,7 @@ fn main() {
     let lines = stdin().lock().lines();
     let board = lines.map(|x| x.unwrap().into_bytes()).collect::<Vec<_>>();
 
-    let ans = part1(&board);
-    println!("Part 1: {}", ans);
-
-    let ans = part2(&board);
-    println!("Part 2: {}", ans);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_part1() {
-        let input = "###############
-#.......#....E#
-#.#.###.#.###.#
-#.....#.#...#.#
-#.###.#####.#.#
-#.#.#.......#.#
-#.#.#####.###.#
-#...........#.#
-###.#.#####.#.#
-#...#.....#.#.#
-#.#.#.###.#.#.#
-#.....#...#.#.#
-#.###.#.#.#.#.#
-#S..#.....#...#
-###############";
-
-        let board = input
-            .lines()
-            .map(|x| x.as_bytes().to_vec())
-            .collect::<Vec<_>>();
-
-        assert_eq!(part1(&board), 7036);
-    }
+    let (mindist, visited) = sssp(&board);
+    println!("mindist={:?}", mindist);
+    println!("visited={:?}", visited);
 }
