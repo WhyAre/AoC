@@ -113,7 +113,7 @@ fn sssp(board: &Vec<Vec<u8>>) -> (usize, usize) {
             }
 
             let newdist = dists[&pos] + cost;
-            if newdist > *dists.get(&newpos).unwrap_or(&INF) {
+            if newdist >= *dists.get(&newpos).unwrap_or(&INF) {
                 continue;
             }
 
