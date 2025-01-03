@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
+name = "setup"
+path = "src/setup.rs"
+
+[[bin]]
 name = "day1"
 path = "src/day1.rs"
 
@@ -47,4 +51,5 @@ path = "src/day16.rs"
 [dependencies]
 itertools = "0.13.0"
 regex = "1.11.1"
+reqwest = { version = "0.12.12", features = ["blocking", "cookies"] }
 text_io = "0.1.12"
