@@ -50,6 +50,7 @@ path = "src/day16.rs"
 
 [dependencies]
 itertools = "0.13.0"
+rayon = "1.10.0"
 regex = "1.11.1"
 reqwest = { version = "0.12.12", features = ["blocking", "cookies"] }
 text_io = "0.1.12"

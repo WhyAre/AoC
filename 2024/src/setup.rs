@@ -1,3 +1,4 @@
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use reqwest::cookie::Jar;
 use reqwest::Url;
 use std::fs::File;
@@ -16,6 +17,7 @@ fn main() {
 
     // Example URL: https://adventofcode.com/2024/day/8/input
     (1..=25)
+        .into_par_iter()
         .filter_map(|day| {
             let url: Url = format!("https://adventofcode.com/{}/day/{}/input", YEAR, day)
                 .parse()
@@ -28,7 +30,6 @@ fn main() {
                 .cookie_provider(Arc::new(jar))
                 .build();
 
-            // client.and_then(|client| client.get(url).map(|resp| (day, resp)))
             client
                 .and_then(|client| client.get(url).send())
                 .map(|resp| (day, resp))
