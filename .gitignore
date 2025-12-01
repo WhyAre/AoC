@@ -1,2 +1,7 @@
 target
 2024/tmp.txt
+2025/_build
+2025/_opam
+2025/inputs/*
+!2025/inputs/
+!2025/inputs/day*-sample.txt
