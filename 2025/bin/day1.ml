@@ -81,7 +81,9 @@ let part2 lst =
 
 let () =
   let lines =
-    read_whole_file "input.txt" |> String.split_on_char '\n' |> List.map parse
+    read_whole_file "inputs/day1-sample.txt"
+    |> String.split_on_char '\n'
+    |> List.map parse
   in
   let count = part1 lines in
   Printf.printf "Part 1: %d\n" count;
