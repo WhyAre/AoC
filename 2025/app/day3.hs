@@ -1,7 +1,5 @@
 module Main where
 
-import Control.Exception
-import Data.Char
 import Data.List
 import Data.Ord
 import Debug.Trace
@@ -23,13 +21,13 @@ getHighestNumber len input =
   read $ aux len input
   where
     aux :: Int -> String -> String
-    aux len input
-      | len <= 0 = ""
+    aux n s
+      | n <= 0 = ""
       | otherwise =
-          maxDigit : aux (len - 1) (drop (maxDigitIdx + 1) input)
+          maxDigit : aux (n - 1) (drop (maxDigitIdx + 1) s)
       where
-        strLen = length input
-        (maxDigitIdx, maxDigit) = getHighestDigit $ take (strLen - len + 1) input
+        strLen = length s
+        (maxDigitIdx, maxDigit) = getHighestDigit $ take (strLen - n + 1) s
 
 part1 :: [String] -> Int
 part1 list =
