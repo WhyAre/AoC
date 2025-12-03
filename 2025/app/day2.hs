@@ -52,7 +52,7 @@ parseRange input =
 
 main :: IO ()
 main = do
-  content <- readFile "inputs/day2.txt"
+  content <- readFile "inputs/day2-sample.txt"
   let ranges = map parseRange $ splitOn "," content
       ans = part1 ranges
   printf "Part 1: %d\n" ans
