@@ -5,3 +5,4 @@ target
 2025/inputs/*
 !2025/inputs/
 !2025/inputs/day*-sample.txt
+dist-newstyle
