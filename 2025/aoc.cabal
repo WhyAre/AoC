@@ -69,3 +69,13 @@ executable day3
 
   hs-source-dirs: app
   default-language: Haskell2010
+
+executable day4
+  import: warnings
+  main-is: day4.hs
+  build-depends:
+    array,
+    base ^>=4.18.3.0,
+
+  hs-source-dirs: app
+  default-language: Haskell2010
