@@ -1,12 +1,7 @@
 module Main where
 
-import Control.Monad (filterM)
-import Control.Monad.ST
 import Data.Array
-import Data.Array.ST
-import qualified Data.Bifunctor
-import Data.Bits (Bits (xor))
-import Debug.Trace
+import Data.Bifunctor
 import Text.Printf
 
 dirs :: [(Int, Int)]
@@ -17,7 +12,7 @@ countNumSurroundingRolls board (r, c) =
   length $
     filter (\x -> board ! x == '@') $
       filter (inRange (bounds board)) $
-        map (Data.Bifunctor.bimap (r +) (c +)) dirs
+        map (bimap (r +) (c +)) dirs
 
 part1 :: Array (Int, Int) Char -> Int
 part1 board =
