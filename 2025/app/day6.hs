@@ -2,34 +2,28 @@ module Main where
 
 import Data.Char
 import Data.List
+import Data.List.Split (splitWhen)
 import Debug.Trace
 import Text.Printf
 
 part1 :: [[String]] -> [Char] -> Int
-part1 nums =
-  doMath processedNums
-  where
-    processedNums = traceShowId $ map (map (read . stripChar '0')) nums
+part1 nums ops =
+  sum $
+    map (uncurry solveSingleProblem) $
+      traceShowId $
+        zipWith (\n op -> (map read n, op)) nums ops
 
 part2 :: [[String]] -> [Char] -> Int
-part2 nums =
-  doMath processedNums
-  where
-    processedNums = traceShowId $ map (map (read . stripChar '0') . transpose) nums
+part2 nums ops =
+  sum $
+    map (uncurry solveSingleProblem) $
+      traceShowId $
+        zipWith (\n op -> (map read (transpose n), op)) nums ops
 
--- Removes char from front and back of string
-stripChar :: (Eq a) => a -> [a] -> [a]
-stripChar c =
-  reverse . dropWhile (== c) . reverse . dropWhile (== c)
-
-doMath :: [[Int]] -> [Char] -> Int
-doMath nums ops =
-  sum $ compute <$> zip nums ops
-  where
-    compute :: ([Int], Char) -> Int
-    compute (ns, '+') = sum ns
-    compute (ns, '*') = product ns
-    compute (_, c) = error $ "dafuq is this: " ++ show c
+solveSingleProblem :: [Int] -> Char -> Int
+solveSingleProblem ns '+' = sum ns
+solveSingleProblem ns '*' = product ns
+solveSingleProblem _ c = error $ "dafuq is this operator: " ++ show c
 
 main :: IO ()
 main = do
@@ -44,18 +38,5 @@ main = do
       (nums, ops)
       where
         (firstRows, lastRow) = (init (lines content), last (lines content))
-        nums = traceShowId $ transpose $ words <$> replaceWithZeros firstRows
+        nums = traceShowId $ transpose <$> splitWhen (all isSpace) (transpose firstRows)
         ops = traceShowId $ head <$> words lastRow
-
-        -- Replaces fake spaces with zeros
-        replaceWithZeros list =
-          transpose $ map replaceRow (transpose list)
-          where
-            replaceRow row =
-              if all isSpace row
-                then row
-                else replace ' ' '0' row
-
-        -- Replace a with b in list
-        replace a b =
-          map (\x -> if x == a then b else x)
