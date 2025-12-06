@@ -2,8 +2,6 @@ module Main where
 
 import Data.Char
 import Data.List
-import Data.List.Split
-import Data.Ord
 import Debug.Trace
 import Text.Printf
 

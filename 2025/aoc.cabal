@@ -94,8 +94,7 @@ executable day6
   import: warnings
   main-is: day6.hs
   build-depends:
-    base ^>=4.18.3.0,
-    split,
+    base ^>=4.18.3.0
 
   hs-source-dirs: app
   default-language: Haskell2010
