@@ -46,7 +46,7 @@ executable day1
   import: warnings
   main-is: day1.hs
   build-depends:
-    base ^>=4.18.3.0
+    base
 
   hs-source-dirs: app
   default-language: Haskell2010
@@ -55,7 +55,7 @@ executable day2
   import: warnings
   main-is: day2.hs
   build-depends:
-    base ^>=4.18.3.0,
+    base,
     split,
 
   hs-source-dirs: app
@@ -65,7 +65,7 @@ executable day3
   import: warnings
   main-is: day3.hs
   build-depends:
-    base ^>=4.18.3.0
+    base
 
   hs-source-dirs: app
   default-language: Haskell2010
@@ -75,7 +75,7 @@ executable day4
   main-is: day4.hs
   build-depends:
     array,
-    base ^>=4.18.3.0,
+    base,
 
   hs-source-dirs: app
   default-language: Haskell2010
@@ -84,7 +84,7 @@ executable day5
   import: warnings
   main-is: day5.hs
   build-depends:
-    base ^>=4.18.3.0,
+    base,
     split,
 
   hs-source-dirs: app
@@ -94,7 +94,7 @@ executable day6
   import: warnings
   main-is: day6.hs
   build-depends:
-    base ^>=4.18.3.0,
+    base,
     split,
 
   hs-source-dirs: app
@@ -105,7 +105,7 @@ executable day7
   main-is: day7.hs
   build-depends:
     array,
-    base ^>=4.18.3.0,
+    base,
     containers,
     queues,
 
@@ -116,7 +116,7 @@ executable day8
   import: warnings
   main-is: day8.hs
   build-depends:
-    base ^>=4.18.3.0,
+    base,
     disjoint-containers,
     split,
 
@@ -127,7 +127,18 @@ executable day9
   import: warnings
   main-is: day9.hs
   build-depends:
-    base ^>=4.18.3.0,
+    base,
+    split,
+
+  hs-source-dirs: app
+  default-language: Haskell2010
+
+executable day10
+  import: warnings
+  main-is: day10.hs
+  build-depends:
+    base,
+    containers,
     split,
 
   hs-source-dirs: app
